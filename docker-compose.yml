@@ -1,0 +1,22 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: compflow-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: compflow_db
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: compflow-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Aqui está o truque: em vez de "localhost", o Spring aponta para "db" (o nome do contêiner acima)
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/compflow_db?useSSL=false&serverTimezone=America/Sao_Paulo&allowPublicKeyRetrieval=true
+    depends_on:
+      - db
+    restart: unless-stopped
