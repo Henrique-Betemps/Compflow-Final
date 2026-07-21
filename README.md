@@ -40,17 +40,17 @@ O sistema foi construído utilizando uma arquitetura monolítica, com o backend 
    cd compflow
 
     Inicie o Banco de Dados:
-    Suba o contêiner do MySQL configurado no projeto utilizando o Docker Compose:
-    Bash
+       Suba o contêiner do MySQL configurado no projeto utilizando o Docker Compose:
+       Bash
 
-    docker-compose up -d
+       docker-compose up -d
 
     Inicie o Servidor Spring Boot:
     Compile e execute a aplicação Java via Maven:
-    Bash
 
-    mvn clean install
-    mvn spring-boot:run
+   Bash
+   mvn clean install
+   mvn spring-boot:run
 
     Acesse a Aplicação:
     Abra o seu navegador e acesse a tela de login: http://localhost:8080/login.html
@@ -67,6 +67,6 @@ Para explorar as funcionalidades do sistema, utilize os usuários previamente po
 
     Aluno (Acesso ao Fluxograma e Progresso):
 
-        Você pode criar uma nova conta na tela de registro ou utilizar o acesso do aluno de teste diretamente pela interface de login.
-
+        Você pode criar uma nova conta na tela de registro ou usar  E-mail: teste1@inf.ufpel.edu.br e Senha: teste123
+        
 Projeto desenvolvido como requisito acadêmico (desenvolvido exclusivamente em Java Spring Boot) para o curso de Ciência da Computação da Universidade Federal de Pelotas (UFPel).
