@@ -334,14 +334,17 @@
               )
               .join("");
 
+            // Define o título: se for 9, é Optativas.
+            const tituloSemestre = sem.semestre === 9 ? "Disciplinas Optativas" : `${sem.semestre}º Semestre`;
+
             container.innerHTML += `
-          <div class="semester-card">
-            <div class="semester-header">
-              <h2>${sem.semestre}º Semestre</h2>
-              <span>${concluidas}/${sem.disciplinas.length} Concluídas</span>
-            </div>
-            <div>${discsHTML}</div>
-          </div>`;
+            <div class="semester-card">
+              <div class="semester-header">
+                <h2>${tituloSemestre}</h2>
+                <span>${concluidas}/${sem.disciplinas.length} Concluídas</span>
+              </div>
+              <div>${discsHTML}</div>
+            </div>`;
           });
         } catch {
           document.getElementById("containerSemestres").innerHTML =

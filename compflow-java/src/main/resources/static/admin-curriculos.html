@@ -815,9 +815,9 @@
           .map((s, si) => {
             const cr = s.discs.reduce((a, d) => a + d.creditos, 0);
             return `<div class="sem-block">
-        <div class="sem-block-header">
-          <span class="sem-num">${s.num}º Semestre</span>
-          <span class="sem-badge">${cr} créditos · ${s.discs.length} disciplinas</span>
+       <div class="sem-block-header">
+          <span class="sem-num">${s.num === 9 ? 'Optativas' : s.num + 'º Semestre'}</span>
+          <span class="sem-badge">${cr} créditos • ${s.discs.length} disciplinas</span>
           <button class="btn-rem-sem" onclick="remSemestre(${si})"><i class="fa-solid fa-trash"></i></button>
         </div>
         <div>

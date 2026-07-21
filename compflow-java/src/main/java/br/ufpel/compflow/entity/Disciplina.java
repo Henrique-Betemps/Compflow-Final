@@ -25,5 +25,5 @@ public class Disciplina {
     @Column(nullable = false)
     private Tipo tipo = Tipo.INTERNO;
 
-    public enum Tipo { INTERNO, EXTERNO }
+    public enum Tipo { INTERNO, EXTERNO, OPTATIVA }
 }

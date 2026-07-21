@@ -315,7 +315,7 @@
 
           // 2. Mapear os status aplicando a lógica de bloqueio
           semestres = prog.semestres.map((s) => ({
-            nome: `SEM ${s.semestre}`,
+            nome: s.semestre === 9 ? "OPTATIVAS" : `SEM ${s.semestre}`,
             disciplinas: s.disciplinas.map((d) => {
 
               let classeVisual = "liberado"; // Por padrão, está liberada
