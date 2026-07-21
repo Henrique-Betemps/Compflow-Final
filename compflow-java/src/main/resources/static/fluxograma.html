@@ -242,10 +242,8 @@
       if (!usuario) window.location.href = "login.html";
 
       document.getElementById("nomeSidebar").textContent = usuario.nome;
-      document.getElementById("cursoSidebar").textContent =
-        usuario.nomeCurso || "";
-      document.getElementById("avatarSidebar").textContent =
-        usuario.nome[0].toUpperCase();
+      document.getElementById("cursoSidebar").textContent = usuario.nomeCurso || "";
+      document.getElementById("avatarSidebar").textContent = usuario.nome[0].toUpperCase();
 
       function sair() {
         localStorage.removeItem("usuario");
@@ -255,12 +253,17 @@
       let semestres = [];
       let filtroAtivo = "todas";
 
-      // Converte status da API para classe CSS
-      function statusParaClasse(s) {
-        if (s === "APROVADO") return "aprovado";
-        if (s === "CURSANDO") return "liberado";
-        return "liberado";
-      }
+      // MOTOR DE PRÉ-REQUISITOS (Código da Disciplina -> [Códigos que precisa ter aprovado])
+      // Adicionei alguns exemplos reais da matriz de Ciência da Computação.
+      const MAPA_PREREQUISITOS = {
+        "22000297": ["22000294"], // Algoritmos I precisa de Algoritmos e Programação
+        "11100059": ["11100058"], // Cálculo 2 precisa de Cálculo 1
+        "22000201": ["22000294"], // POO precisa de Algoritmos e Programação
+        "22000299": ["22000297"], // Algoritmos II precisa de Algoritmos I
+        "11100110": ["11100058"], // Álgebra Linear precisa de Cálculo 1
+        "22000182": ["22000181"], // Arquitetura II precisa de Arquitetura I
+        "22000300": ["22000299"], // Algoritmos III precisa de Algoritmos II
+      };
 
       // GET /api/progresso/{usuarioId}
       async function carregarFluxograma() {
@@ -269,78 +272,90 @@
           const prog = await res.json();
 
           if (prog.semestres && prog.semestres.length) {
-            document.getElementById("tituloFlux").textContent =
-              `Fluxograma — ${usuario.nomeCurso || "Meu Curso"}`;
+            document.getElementById("tituloFlux").textContent = `Fluxograma — ${usuario.nomeCurso || "Meu Curso"}`;
           }
 
+          // 1. Criar um inventário com todos os códigos que o aluno JÁ APROVOU
+          const codigosAprovados = [];
+          prog.semestres.forEach(s => {
+            s.disciplinas.forEach(d => {
+              if (d.status === "APROVADO") codigosAprovados.push(d.codigo);
+            });
+          });
+
+          // 2. Mapear os status aplicando a lógica de bloqueio
           semestres = prog.semestres.map((s) => ({
             nome: `SEM ${s.semestre}`,
-            disciplinas: s.disciplinas.map((d) => ({
-              id: d.id,
-              codigo: d.codigo,
-              nome: d.nome,
-              cr: d.creditos,
-              status: statusParaClasse(d.status),
-              statusApi: d.status,
-            })),
+            disciplinas: s.disciplinas.map((d) => {
+
+              let classeVisual = "liberado"; // Por padrão, está liberada
+
+              if (d.status === "APROVADO") {
+                classeVisual = "aprovado";
+              } else {
+                // Checa se a disciplina possui exigências no nosso mapa
+                const prereqs = MAPA_PREREQUISITOS[d.codigo];
+                if (prereqs) {
+                  // Se algum pré-requisito NÃO estiver no inventário de aprovadas, a matéria é bloqueada
+                  const estaTrancada = prereqs.some(req => !codigosAprovados.includes(req));
+                  if (estaTrancada) {
+                    classeVisual = "bloqueado";
+                  }
+                }
+              }
+
+              return {
+                id: d.id,
+                codigo: d.codigo,
+                nome: d.nome,
+                cr: d.creditos,
+                status: classeVisual,
+                statusApi: d.status,
+              };
+            }),
           }));
 
           render();
         } catch {
           document.getElementById("fluxArea").innerHTML =
-            '<p style="color:#e53935;font-size:13px;padding:20px;">Erro ao carregar fluxograma. Verifique se a API está rodando.</p>';
+                  '<p style="color:#e53935;font-size:13px;padding:20px;">Erro ao carregar fluxograma. Verifique se a API está rodando.</p>';
         }
       }
 
       function filtrar(f, btn) {
         filtroAtivo = f;
-        document
-          .querySelectorAll(".fbtn")
-          .forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".fbtn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         render();
       }
 
       function render() {
-        let ap = 0,
-          li = 0,
-          bl = 0;
-        const html = semestres
-          .map((s) => {
-            let discs = s.disciplinas;
-            if (filtroAtivo === "aprovadas")
-              discs = discs.filter((d) => d.status === "aprovado");
-            if (filtroAtivo === "pendentes")
-              discs = discs.filter((d) => d.status !== "aprovado");
+        let ap = 0, li = 0, bl = 0;
 
-            discs.forEach((d) => {
-              if (d.status === "aprovado") ap++;
-              else if (d.status === "liberado") li++;
-              else bl++;
-            });
+        const html = semestres.map((s) => {
+          let discs = s.disciplinas;
+          if (filtroAtivo === "aprovadas") discs = discs.filter((d) => d.status === "aprovado");
+          if (filtroAtivo === "pendentes") discs = discs.filter((d) => d.status !== "aprovado");
 
-            const discsHTML = discs
-              .map(
-                (d) => `
+          discs.forEach((d) => {
+            if (d.status === "aprovado") ap++;
+            else if (d.status === "liberado") li++;
+            else bl++;
+          });
+
+          const discsHTML = discs.map((d) => `
         <div class="disc ${d.status}" ${d.status !== "bloqueado" ? `onclick="toggle(${d.id},'${d.statusApi}')"` : ""}>
           <div class="disc-nome">${d.nome}</div>
           <div class="disc-foot">
             <span class="disc-cod">${d.codigo}</span>
             <span class="disc-cr">${d.cr}</span>
           </div>
-        </div>`,
-              )
-              .join("");
+        </div>`).join("");
 
-            return `<div class="flux-col">
-        <div class="sem-header">${s.nome}</div>
-        ${discsHTML}
-      </div>`;
-          })
-          .join("");
+          return `<div class="flux-col"><div class="sem-header">${s.nome}</div>${discsHTML}</div>`;
+        }).join("");
 
-        document.getElementById("fluxArea").innerHTML =
-          `<div class="flux-scroll"><div class="flux-grid">${html}</div></div>`;
+        document.getElementById("fluxArea").innerHTML = `<div class="flux-scroll"><div class="flux-grid">${html}</div></div>`;
         document.getElementById("cntAp").textContent = ap;
         document.getElementById("cntLib").textContent = li;
         document.getElementById("cntBl").textContent = bl;
