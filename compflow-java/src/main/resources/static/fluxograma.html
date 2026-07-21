@@ -253,16 +253,46 @@
       let semestres = [];
       let filtroAtivo = "todas";
 
-      // MOTOR DE PRÉ-REQUISITOS (Código da Disciplina -> [Códigos que precisa ter aprovado])
-      // Adicionei alguns exemplos reais da matriz de Ciência da Computação.
+      // MOTOR DE PRÉ-REQUISITOS - Mapeamento da UFPEL (Ciência da Computação)
       const MAPA_PREREQUISITOS = {
-        "22000297": ["22000294"], // Algoritmos I precisa de Algoritmos e Programação
-        "11100059": ["11100058"], // Cálculo 2 precisa de Cálculo 1
-        "22000201": ["22000294"], // POO precisa de Algoritmos e Programação
-        "22000299": ["22000297"], // Algoritmos II precisa de Algoritmos I
-        "11100110": ["11100058"], // Álgebra Linear precisa de Cálculo 1
-        "22000182": ["22000181"], // Arquitetura II precisa de Arquitetura I
-        "22000300": ["22000299"], // Algoritmos III precisa de Algoritmos II
+        // === SEMESTRE 2 ===
+        "22000296": ["22000294"], // Programação de Computadores <- Algoritmos e Programação
+        "11100059": ["11100058"], // Cálculo 2 <- Cálculo 1
+
+        // === SEMESTRE 3 ===
+        "22000197": ["22000293"], // Linguagens Formais <- Sistemas Discretos
+        "22000201": ["22000296"], // Prog. Orientada a Objetos <- Programação de Computadores
+        "22000297": ["22000296", "22000295"], // Alg. e Est. Dados I <- Prog. Comp. + Análise Combinatória
+        "22000181": ["22000296", "22000211"], // Arq. e Org. de Comp I <- Prog. Comp. + Técnicas Digitais
+
+        // === SEMESTRE 4 ===
+        "22000205": ["22000197"], // Teoria da Computação <- Linguagens Formais
+        "22000299": ["22000297"], // Alg. e Est. Dados II <- Alg. e Est. Dados I
+        "22000182": ["22000181"], // Arq. e Org. de Comp II <- Arq. e Org. de Comp I
+        "22000298": ["11100059"], // Estatística Básica <- Cálculo 2
+
+        // === SEMESTRE 5 ===
+        "22000300": ["22000299"], // Alg. e Est. Dados III <- Alg. e Est. Dados II
+        "22000270": ["22000299", "22000182"], // Sistemas Operacionais <- Alg. e Est. Dados II + Arq. II
+        "22000237": ["22000182"], // Programação de Sistemas <- Arq. e Org. de Comp II
+        "22000302": ["22000299"], // Projeto de Banco de Dados <- Alg. e Est. Dados II
+
+        // === SEMESTRE 6 ===
+        "22000203": ["22000188"], // Semântica Formal <- Conceitos de Linguagens
+        "22000187": ["22000300", "11100110"], // Computação Gráfica <- Alg. e Est. Dados III + Álg. Linear
+        "22000189": ["22000300"], // Eng. de Software I <- Alg. e Est. Dados III
+        "22000273": ["22000270", "22000237"], // Redes de Computadores <- Sist. Operacionais + Prog. Sistemas
+        "22000268": ["11100059"], // Cálculo Numérico <- Cálculo 2
+
+        // === SEMESTRE 7 ===
+        "22000303": ["22000197"], // Projeto de Compiladores <- Linguagens Formais
+        "22000304": ["22000201"], // Desenvolvimento de Softwares <- Prog. Orientada a Objetos
+        "22000174": ["22000189"], // Eng. de Software II <- Eng. de Software I
+        "22000272": ["22000273"], // Int. Proc. Paralelo e Dist. <- Redes de Computadores
+        "22000305": ["22000199"], // Trabalho de Conclusão I <- Met. Científica para Computação
+
+        // === SEMESTRE 8 ===
+        "22000306": ["22000305"]  // Trabalho de Conclusão II <- Trabalho de Conclusão I
       };
 
       // GET /api/progresso/{usuarioId}
