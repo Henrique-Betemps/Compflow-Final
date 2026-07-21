@@ -310,6 +310,23 @@
           document.getElementById("credRest").textContent =
             `${prog.totalCreditos - prog.creditorConcluidos} créditos restantes`;
 
+          // --- CÁLCULO DO SEMESTRE ATUAL ---
+          let semestreAtual = 1;
+          if (prog.semestres && prog.semestres.length > 0) {
+            // Filtra os semestres (ignorando o 9 de optativas) que têm ao menos 1 aprovação
+            const semsComAprovacao = prog.semestres
+                    .filter(s => s.semestre !== 9 && s.disciplinas.some(d => d.status === "APROVADO"))
+                    .map(s => s.semestre);
+
+            if (semsComAprovacao.length > 0) {
+              // O semestre atual é o MAIOR semestre encontrado na lista
+              semestreAtual = Math.max(...semsComAprovacao);
+            }
+          }
+          // Injeta o número na caixa laranja da tela
+          document.getElementById("cSem").textContent = semestreAtual + "º";
+          //
+
           const container = document.getElementById("containerSemestres");
           container.innerHTML = "";
 
