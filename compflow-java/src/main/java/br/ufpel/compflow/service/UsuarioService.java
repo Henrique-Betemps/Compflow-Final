@@ -11,6 +11,8 @@ import br.ufpel.compflow.repository.CursoRepository;
 import br.ufpel.compflow.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
@@ -22,6 +24,11 @@ public class UsuarioService {
     private final UsuarioRepository    usuarioRepo;
     private final CursoRepository      cursoRepo;
     private final CurriculoRepository  curriculoRepo;
+
+    // ALTERADO: encoder de senha. Registrado aqui em vez de via @Bean para
+    // manter o diff mínimo — se preferir, mova para uma classe de config e
+    // injete via construtor (@RequiredArgsConstructor já cobre isso).
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public List<UsuarioResponse> listarTodos() {
         return usuarioRepo.findAll().stream()
@@ -39,7 +46,9 @@ public class UsuarioService {
         Usuario u = new Usuario();
         u.setNome(req.getNome());
         u.setEmail(req.getEmail());
-        u.setSenhaHash(req.getSenha()); // TODO: BCrypt
+
+        // ALTERADO: nunca gravar a senha em texto puro no banco.
+        u.setSenhaHash(passwordEncoder.encode(req.getSenha()));
         u.setRole(Usuario.Role.ALUNO);
 
         if (req.getCursoId() != null) {
@@ -70,8 +79,9 @@ public class UsuarioService {
     public UsuarioResponse login(LoginRequest req) {
         Usuario u = usuarioRepo.findByEmail(req.getEmail())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas"));
-        // TODO: BCrypt.matches
-        if (!u.getSenhaHash().equals(req.getSenha())) {
+
+        // ALTERADO: compara o hash em vez de string crua.
+        if (!passwordEncoder.matches(req.getSenha(), u.getSenhaHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas");
         }
         return UsuarioResponse.from(u);
