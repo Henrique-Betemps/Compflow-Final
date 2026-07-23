@@ -314,9 +314,13 @@
           });
 
           // 2. Mapear os status aplicando a lógica de bloqueio
-          semestres = prog.semestres.map((s) => ({
-            nome: s.semestre === 9 ? "OPTATIVAS" : `SEM ${s.semestre}`,
-            disciplinas: s.disciplinas.map((d) => {
+          semestres = prog.semestres.map((s) => {
+            const todasOptativas =
+              s.disciplinas.length > 0 &&
+              s.disciplinas.every((d) => d.categoria === "OPTATIVA");
+            return {
+              nome: todasOptativas ? "OPTATIVAS" : `SEM ${s.semestre}`,
+              disciplinas: s.disciplinas.map((d) => {
 
               let classeVisual = "liberado"; // Por padrão, está liberada
 
@@ -343,7 +347,8 @@
                 statusApi: d.status,
               };
             }),
-          }));
+            };
+          });
 
           render();
         } catch {

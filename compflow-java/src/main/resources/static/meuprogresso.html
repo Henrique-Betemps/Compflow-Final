@@ -234,6 +234,13 @@
             </div>
           </div>
           <div class="resume-card">
+            <div class="icon"><i class="fa-solid fa-star"></i></div>
+            <div>
+              <h2 id="cCredOpt">—</h2>
+              <p>Créditos optativos</p>
+            </div>
+          </div>
+          <div class="resume-card">
             <div class="icon orange">
               <i class="fa-regular fa-calendar"></i>
             </div>
@@ -300,6 +307,8 @@
             `${prog.aprovadas}/${prog.totalDisciplinas}`;
           document.getElementById("cCred").textContent =
             `${prog.creditorConcluidos}/${prog.totalCreditos}`;
+          document.getElementById("cCredOpt").textContent =
+            `${prog.creditosOptativosConcluidos}/${prog.totalCreditosOptativos}`;
           document.getElementById("cPct").textContent = prog.percentual + "%";
           document.getElementById("pctLabel").textContent =
             prog.percentual + "%";
@@ -313,9 +322,12 @@
           // --- CÁLCULO DO SEMESTRE ATUAL ---
           let semestreAtual = 1;
           if (prog.semestres && prog.semestres.length > 0) {
-            // Filtra os semestres (ignorando o 9 de optativas) que têm ao menos 1 aprovação
+            // Considera só disciplinas obrigatórias (INTERNO/EXTERNO) aprovadas;
+            // optativas não contam pra decidir em qual semestre o aluno está.
             const semsComAprovacao = prog.semestres
-                    .filter(s => s.semestre !== 9 && s.disciplinas.some(d => d.status === "APROVADO"))
+                    .filter(s => s.disciplinas.some(
+                      d => d.status === "APROVADO" && d.categoria !== "OPTATIVA"
+                    ))
                     .map(s => s.semestre);
 
             if (semsComAprovacao.length > 0) {
@@ -351,8 +363,14 @@
               )
               .join("");
 
-            // Define o título: se for 9, é Optativas.
-            const tituloSemestre = sem.semestre === 9 ? "Disciplinas Optativas" : `${sem.semestre}º Semestre`;
+            // Título do grupo: se TODAS as disciplinas do grupo são optativas,
+            // mostra "Disciplinas Optativas" em vez do número do semestre.
+            const todasOptativas =
+              sem.disciplinas.length > 0 &&
+              sem.disciplinas.every((d) => d.categoria === "OPTATIVA");
+            const tituloSemestre = todasOptativas
+              ? "Disciplinas Optativas"
+              : `${sem.semestre}º Semestre`;
 
             container.innerHTML += `
             <div class="semester-card">

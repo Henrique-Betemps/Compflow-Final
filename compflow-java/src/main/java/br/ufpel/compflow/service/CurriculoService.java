@@ -23,7 +23,9 @@ public class CurriculoService {
     private final CursoRepository               cursoRepo;
 
     public List<CurriculoResponse> listarTodos() {
-        return curriculoRepo.findAll().stream().map(this::toResponse).toList();
+        // findAllComCurso() traz o curso de cada currículo numa única
+        // consulta, em vez de uma consulta extra por currículo (N+1).
+        return curriculoRepo.findAllComCurso().stream().map(this::toResponse).toList();
     }
 
     public CurriculoResponse buscarPorId(Long id) {

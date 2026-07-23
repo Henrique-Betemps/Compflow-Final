@@ -46,20 +46,49 @@ public class ProgressoService {
             cds = cdRepo.findByCurriculoIdOrderBySemestre(curriculoDoAluno.getId());
         }
 
+        // Curso do aluno, usado como referência pra decidir interno/externo
+        Curso cursoDoAluno = curriculoDoAluno != null ? curriculoDoAluno.getCurso() : null;
+
         Map<Integer, List<ProgressoResponse.DisciplinaProgressoResponse>> porSemestre = new TreeMap<>();
         int totalCreditos = 0, creditosConcluidos = 0, aprovadas = 0;
+        int totalCreditosOptativos = 0, creditosOptativosConcluidos = 0;
 
         for (CurriculoDisciplina cd : cds) {
             Disciplina d  = cd.getDisciplina();
             String status = statusMap.getOrDefault(d.getId(), "PENDENTE");
-            totalCreditos += d.getCreditos();
-            if ("APROVADO".equals(status)) {
-                creditosConcluidos += d.getCreditos();
+            boolean aprovado = "APROVADO".equals(status);
+            boolean optativa = d.isOptativa();
+
+            String categoria;
+            if (optativa) {
+                categoria = "OPTATIVA";
+            } else if (cursoDoAluno != null && d.getCursos().stream()
+                    .anyMatch(c -> c.getId().equals(cursoDoAluno.getId()))) {
+                categoria = "INTERNO";
+            } else {
+                categoria = "EXTERNO";
+            }
+
+            if (optativa) {
+                // Optativas têm contagem própria e não entram no total obrigatório
+                totalCreditosOptativos += d.getCreditos();
+                if (aprovado) {
+                    creditosOptativosConcluidos += d.getCreditos();
+                }
+            } else {
+                totalCreditos += d.getCreditos();
+                if (aprovado) {
+                    creditosConcluidos += d.getCreditos();
+                }
+            }
+
+            if (aprovado) {
                 aprovadas++;
             }
+
             porSemestre.computeIfAbsent(cd.getSemestre(), k -> new ArrayList<>())
                 .add(new ProgressoResponse.DisciplinaProgressoResponse(
-                    d.getId(), d.getCodigo(), d.getNome(), d.getCreditos(), status));
+                    d.getId(), d.getCodigo(), d.getNome(), d.getCreditos(), status, categoria));
         }
 
         int percentual = totalCreditos > 0
@@ -71,7 +100,9 @@ public class ProgressoService {
 
         return new ProgressoResponse(
             usuarioId, u.getNome(), cds.size(), aprovadas,
-            creditosConcluidos, totalCreditos, percentual, semestresResp
+            creditosConcluidos, totalCreditos,
+            creditosOptativosConcluidos, totalCreditosOptativos,
+            percentual, semestresResp
         );
     }
 

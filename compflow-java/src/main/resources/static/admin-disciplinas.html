@@ -79,12 +79,19 @@
             </div>
             <select
               class="filter-select"
-              id="filtroTipo"
+              id="filtroCurso"
               onchange="renderTabela()"
             >
-              <option value="">Todos os tipos</option>
-              <option value="INTERNO">Interno</option>
-              <option value="EXTERNO">Externo</option>
+              <option value="">Todos os cursos</option>
+            </select>
+            <select
+              class="filter-select"
+              id="filtroOptativa"
+              onchange="renderTabela()"
+            >
+              <option value="">Todas</option>
+              <option value="sim">Somente optativas</option>
+              <option value="nao">Somente obrigatórias</option>
             </select>
           </div>
           <div class="table-count" id="count"></div>
@@ -153,12 +160,15 @@
             />
           </div>
           <div class="form-group">
-            <label>Tipo</label>
-            <select id="fTipo">
-              <option value="INTERNO">Interno (Computação)</option>
-              <option value="EXTERNO">Externo</option>
-            </select>
+            <label>Cursos (pode marcar mais de um)</label>
+            <div id="fCursos" style="display:flex; flex-direction:column; gap:6px;">
+              <!-- checkboxes de curso inseridos via JS -->
+            </div>
           </div>
+        </div>
+        <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="fOptativa" style="width:auto;" />
+          <label style="margin:0;">É uma disciplina optativa</label>
         </div>
         <div class="form-group">
           <label>Pré-requisitos (opcional)</label>
@@ -201,7 +211,30 @@
       }
 
       let disciplinas = [];
+      let cursos = [];
       let editId = null;
+
+      // GET /api/cursos
+      async function carregarCursos() {
+        try {
+          const res = await fetch(`${BASE}/cursos`);
+          cursos = await res.json();
+          document.getElementById("filtroCurso").innerHTML =
+            '<option value="">Todos os cursos</option>' +
+            cursos.map((c) => `<option value="${c.id}">${c.nome}</option>`).join("");
+          document.getElementById("fCursos").innerHTML = cursos
+            .map(
+              (c) => `
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+          <input type="checkbox" class="fCursoCheckbox" value="${c.id}" style="width:auto;" />
+          ${c.nome}
+        </label>`,
+            )
+            .join("");
+        } catch {
+          console.error("Erro ao carregar cursos");
+        }
+      }
 
       // GET /api/disciplinas
       async function carregar() {
@@ -217,32 +250,47 @@
 
       function renderTabela() {
         const busca = document.getElementById("busca").value.toLowerCase();
-        const tipo = document.getElementById("filtroTipo").value;
+        const cursoId = document.getElementById("filtroCurso").value;
+        const optativaFiltro = document.getElementById("filtroOptativa").value;
         let lista = disciplinas;
         if (busca)
           lista = lista.filter(
             (d) =>
               d.nome.toLowerCase().includes(busca) || d.codigo.includes(busca),
           );
-        if (tipo) lista = lista.filter((d) => d.tipo === tipo);
+        if (cursoId)
+          lista = lista.filter((d) =>
+            (d.cursoIds || []).map(String).includes(cursoId),
+          );
+        if (optativaFiltro === "sim") lista = lista.filter((d) => d.optativa);
+        if (optativaFiltro === "nao") lista = lista.filter((d) => !d.optativa);
 
         document.getElementById("count").textContent =
           `Lista de Disciplinas (${lista.length})`;
         document.getElementById("tbody").innerHTML = lista.length
           ? lista
-              .map(
-                (d) => `
+              .map((d) => {
+                const nomesCursos = (d.cursoNomes || []).join(", ");
+                const rotulo = d.optativa
+                  ? "Optativa"
+                  : nomesCursos || "Sem curso";
+                const classe = d.optativa
+                  ? "badge-optativa"
+                  : nomesCursos
+                    ? "badge-interno"
+                    : "badge-externo";
+                return `
       <tr>
         <td><code style="background:#f3f4f8;padding:2px 8px;border-radius:6px;font-size:12px;">${d.codigo}</code></td>
         <td style="font-weight:600;">${d.nome}</td>
         <td>${d.creditos}</td>
-        <td><span class="badge badge-${d.tipo.toLowerCase()}">${d.tipo}</span></td>
+        <td><span class="badge ${classe}">${rotulo}</span></td>
         <td><div class="tbl-actions">
           <button class="btn-icon btn-edit" onclick="abrirEditar(${d.id})"><i class="fa-solid fa-pen"></i></button>
           <button class="btn-icon btn-del"  onclick="excluir(${d.id})"><i class="fa-solid fa-trash"></i></button>
         </div></td>
-      </tr>`,
-              )
+      </tr>`;
+              })
               .join("")
           : '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Nenhuma disciplina encontrada.</td></tr>';
       }
@@ -254,7 +302,10 @@
         ["fCodigo", "fNome", "fCreditos", "fPrereq", "fDesc"].forEach(
           (id) => (document.getElementById(id).value = ""),
         );
-        document.getElementById("fTipo").value = "INTERNO";
+        document
+          .querySelectorAll(".fCursoCheckbox")
+          .forEach((chk) => (chk.checked = false));
+        document.getElementById("fOptativa").checked = false;
         document.getElementById("modalAlert").style.display = "none";
         document.getElementById("modalOverlay").classList.remove("hidden");
       }
@@ -268,7 +319,11 @@
         document.getElementById("fCodigo").value = d.codigo;
         document.getElementById("fNome").value = d.nome;
         document.getElementById("fCreditos").value = d.creditos;
-        document.getElementById("fTipo").value = d.tipo;
+        const idsAtuais = (d.cursoIds || []).map(String);
+        document.querySelectorAll(".fCursoCheckbox").forEach((chk) => {
+          chk.checked = idsAtuais.includes(chk.value);
+        });
+        document.getElementById("fOptativa").checked = !!d.optativa;
         document.getElementById("modalAlert").style.display = "none";
         document.getElementById("modalOverlay").classList.remove("hidden");
       }
@@ -286,7 +341,10 @@
         const nome = document.getElementById("fNome").value.trim();
         const creditos =
           parseInt(document.getElementById("fCreditos").value) || 0;
-        const tipo = document.getElementById("fTipo").value;
+        const cursoIds = Array.from(
+          document.querySelectorAll(".fCursoCheckbox:checked"),
+        ).map((chk) => parseInt(chk.value));
+        const optativa = document.getElementById("fOptativa").checked;
         if (!codigo || !nome || !creditos) {
           mostrarAlertaModal("Preencha código, nome e créditos.", "#c62828");
           return;
@@ -304,7 +362,7 @@
           const res = await fetch(url, {
             method,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ codigo, nome, creditos, tipo }),
+            body: JSON.stringify({ codigo, nome, creditos, cursoIds, optativa }),
           });
           if (!res.ok) throw new Error(await res.text());
           fecharModal();
@@ -335,7 +393,7 @@
         carregar();
       }
 
-      carregar();
+      carregarCursos().then(carregar);
     </script>
   </body>
 </html>
